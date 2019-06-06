@@ -89,3 +89,8 @@ Units/**/Makefile.am
 Units/**/Makefile.in
 Tmain/dist.m4
 Units/dist.m4
+
+.kdev4
+ctags.bc
+ctags.kdev4
+mini-geany.bc

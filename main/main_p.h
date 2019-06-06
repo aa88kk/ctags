@@ -18,5 +18,8 @@
 *   FUNCTION PROTOTYPES
 */
 extern int ctags_cli_main (int argc, char **argv);
+extern bool createTagsForEntry (const char *const entryName);
+extern bool sayHi(const char *const entryName);
+extern void genTags (const char *const filename);
 
 #endif  /* CTAGS_MAIN_MAIN_PRIVATE_H */

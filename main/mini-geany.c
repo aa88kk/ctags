@@ -20,8 +20,11 @@
 #include "trashbox_p.h"
 #include "field_p.h"
 #include "xtag_p.h"
+#include "ptag_p.h"
 #include "entry_p.h"
-
+#include "interactive_p.h"
+#include "writer_p.h"
+#include <jansson.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -86,7 +89,7 @@ static void ctagsInit(void)
 	initDefaultTrashBox ();
 
 	setErrorPrinter (nofatalErrorPrinter, NULL);
-	setTagWriter (WRITER_CUSTOM, &customWriter);
+	//setTagWriter (WRITER_CUSTOM, &customWriter);
 
 	checkRegex ();
 	initFieldObjects ();
@@ -95,12 +98,18 @@ static void ctagsInit(void)
 	initializeParsing ();
 	initOptions ();
 
+
 	/* make sure all parsers are initialized */
 	initializeParser (LANG_AUTO);
 
 	/* change default value which is false */
-	enableXtag(XTAG_TAGS_GENERATED_BY_GUEST_PARSERS, true);
-	enableXtag(XTAG_REFERENCE_TAGS, true);
+	//enableXtag(XTAG_TAGS_GENERATED_BY_GUEST_PARSERS, true);
+	//enableXtag(XTAG_REFERENCE_TAGS, true);
+
+	enablePtag (PTAG_JSON_OUTPUT_VERSION, true);
+	enablePtag (PTAG_OUTPUT_MODE, false);
+	enablePtag (PTAG_FILE_FORMAT, false);
+	setTagWriter (WRITER_JSON, NULL);
 
 	/* some kinds we are interested in are disabled by default */
 	enableAllLangKinds();
@@ -289,11 +298,32 @@ static void processCollectedTags(ptrArray *tagArray)
 	ptrArrayClear(tagArray);
 }
 
+extern void hi(const char *fname) {
+
+    printf("hi9\n");
+	//setTagWriter (WRITER_JSON, NULL);
+	//Option.sorted = SO_UNSORTED;
+	//enablePtag (PTAG_JSON_OUTPUT_VERSION, true);
+
+	//json_set_alloc_funcs (eMalloc, eFree);
+	/* called once when Geany starts */
+	//ctagsInit();
+	ptrArray *tagArray = ptrArrayNew((ptrArrayDeleteFunc)destroyTag);
+
+    parseFileWithMio(fname, NULL, tagArray);
+    processCollectedTags(tagArray);
+
+	ptrArrayDelete(tagArray);
+}
 
 extern int main (int argc, char **argv)
 {
 	/* called once when Geany starts */
 	ctagsInit();
+
+
+	//setErrorPrinter (jsonErrorPrinter, NULL);
+
 
 	/* create empty tag array *
 	 * this is where we store the collected tags
@@ -334,7 +364,8 @@ extern int main (int argc, char **argv)
 		{
 			printf("\nParsing %s:\n", argv[i]);
 			/* parseRawBuffer() is called repeatadly during Geany execution */
-			parseRawBuffer(argv[i], NULL, 0, getNamedLanguage("C", 0), tagArray);
+			//parseRawBuffer(argv[i], NULL, 0, getNamedLanguage("C", 0), tagArray);
+            parseFileWithMio(argv[i], NULL, tagArray);
 
 			processCollectedTags(tagArray);
 		}
@@ -342,5 +373,5 @@ extern int main (int argc, char **argv)
 
 	ptrArrayDelete(tagArray);
 
-	return 0;
+	//return 0;
 }

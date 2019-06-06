@@ -63,6 +63,7 @@
 #include "trashbox_p.h"
 #include "writer_p.h"
 #include "xtag_p.h"
+#include "ptag_p.h"
 
 #ifdef HAVE_JANSSON
 #include "interactive_p.h"
@@ -79,7 +80,9 @@ static void *mainData;
 /*
 *   FUNCTION PROTOTYPES
 */
-static bool createTagsForEntry (const char *const entryName);
+extern bool createTagsForEntry (const char *const entryName);
+extern bool sayHi() ;
+extern void genTags (const char *const filename);
 
 /*
 *   FUNCTION DEFINITIONS
@@ -197,7 +200,7 @@ static bool recurseIntoDirectory (const char *const dirName)
 	return resize;
 }
 
-static bool createTagsForEntry (const char *const entryName)
+extern bool createTagsForEntry (const char *const entryName)
 {
 	bool resize = false;
 	fileStatus *status = eStat (entryName);
@@ -416,6 +419,11 @@ void interactiveLoop (cookedArgs *args CTAGS_ATTR_UNUSED, void *user)
 
 	while (fgets (buffer, sizeof(buffer), stdin))
 	{
+        fputs("buffer3:\n", stdout);
+        fputs(buffer, stdout);
+        fputs(buffer[0], stdout);
+        fflush(stdout);
+
 		if (buffer[0] == '\n')
 			continue;
 
@@ -423,6 +431,7 @@ void interactiveLoop (cookedArgs *args CTAGS_ATTR_UNUSED, void *user)
 		if (! request)
 		{
 			error (FATAL, "invalid json");
+
 			goto next;
 		}
 
@@ -577,6 +586,7 @@ extern int ctags_cli_main (int argc CTAGS_ATTR_UNUSED, char **argv)
 	/*  Clean up.
 	 */
 	cArgDelete (args);
+    /*
 	freeKeywordTable ();
 	freeRoutineResources ();
 	freeInputFileResources ();
@@ -592,7 +602,67 @@ extern int ctags_cli_main (int argc CTAGS_ATTR_UNUSED, char **argv)
 
 	if (Option.printLanguage)
 		return (Option.printLanguage == true)? 0: 1;
-
 	exit (0);
+    */
 	return 0;
+}
+
+extern bool sayHi(const char *const entryName) {
+  printf("Hi!! %s\n", entryName);
+  return true;
+}
+
+static void destroyTag(Tag *tag)
+{
+	if (tag->name)
+		eFree(tag->name);
+	if (tag->signature)
+		eFree(tag->signature);
+	if (tag->scopeName)
+		eFree(tag->scopeName);
+	if (tag->inheritance)
+		eFree(tag->inheritance);
+	if (tag->varType)
+		eFree(tag->varType);
+	if (tag->access)
+		eFree(tag->access);
+	if (tag->implementation)
+		eFree(tag->implementation);
+	eFree(tag);
+}
+
+extern void genTags (const char *const filename) {
+
+    printf("genTags!! %s\n", filename);
+	clock_t timeStamps [3];
+	bool resize = false;
+
+#define timeStamp(n) timeStamps[(n)]=(Option.printTotals ? clock():(clock_t)0)
+	if ((! Option.filter) && (! Option.printLanguage))
+		openTagFile ();
+
+	timeStamp (0);
+
+    verbose ("genTags()");
+
+    ptrArray *tagArray = ptrArrayNew((ptrArrayDeleteFunc)destroyTag);
+
+    resize = createTagsForEntry (filename);
+    printf("resize is %s\n", resize);
+	timeStamp (1);
+
+	if ((! Option.filter) && (!Option.printLanguage))
+		closeTagFile (resize);
+
+	timeStamp (2);
+
+	if (Option.printTotals)
+	{
+		printTotals (timeStamps, Option.append, Option.sorted);
+		if (Option.printTotals > 1)
+			for (unsigned int i = 0; i < countParsers(); i++)
+				printParserStatisticsIfUsed (i);
+	}
+
+#undef timeStamp
 }
